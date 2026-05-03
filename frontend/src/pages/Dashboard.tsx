@@ -29,8 +29,11 @@ interface Message {
 function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [jwt, setJwt] = useState<string | null>(null);
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [activeConversationId, setActiveConversationId] = useState<
+    string | null
+  >(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [query, setQuery] = useState("");
   const [streamedContent, setStreamedContent] = useState("");
@@ -46,10 +49,13 @@ function Dashboard() {
   // ── Auth ──
   useEffect(() => {
     async function getInfo() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       const session = await supabase.auth.getSession();
       setUser(user);
       setJwt(session.data.session?.access_token || null);
+      setIsAuthChecked(true);
     }
     getInfo();
   }, []);
@@ -80,13 +86,20 @@ function Dashboard() {
     try {
       const res = await axios.get(
         `${BACKEND_URL}/api/conversations/${conversationId}`,
-        { headers: { Authorization: `Bearer ${jwt}` } }
+        { headers: { Authorization: `Bearer ${jwt}` } },
       );
       setMessages(res.data.messages || []);
     } catch (error) {
       console.error("Error loading conversation:", error);
     }
   }
+
+  useEffect(() => {
+    if (!isAuthChecked) return;
+    if (!user || !jwt) {
+      navigate("/auth");
+    }
+  }, [isAuthChecked, user, jwt, navigate]);
 
   // ── Auto-scroll logic ──
   useEffect(() => {
@@ -149,12 +162,14 @@ function Dashboard() {
           fullText = responseText;
 
           // Check if we've received the SOURCES block
-          const sourcesMatch = fullText.match(/<SOURCES>\n([\s\S]*?)\n<\/SOURCES>/);
+          const sourcesMatch = fullText.match(
+            /<SOURCES>\n([\s\S]*?)\n<\/SOURCES>/,
+          );
           if (sourcesMatch) {
             try {
               const parsed = JSON.parse(sourcesMatch[1]!);
               setSources(parsed);
-            } catch { }
+            } catch {}
             const contentBeforeSources = fullText.split("\n<SOURCES>")[0];
             setStreamedContent(contentBeforeSources!);
           } else {
