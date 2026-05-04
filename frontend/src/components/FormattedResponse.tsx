@@ -21,8 +21,7 @@ export function FormattedResponse({
   let parsed: ParsedResponse | null = null;
   try {
     parsed = JSON.parse(content);
-  } catch {
-}
+  } catch {}
 
   if (!parsed) {
     return (
@@ -35,10 +34,17 @@ export function FormattedResponse({
     );
   }
 
+  const toArray = (val: unknown): string[] => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    if (typeof val === "string") return [val];
+    return [];
+  };
+
   const title = parsed.Title || "";
-  const summary = parsed.Summary || [];
-  const answer = parsed.Answer || parsed.answer || [];
-  const followUps = parsed.Followups || parsed.followUpQuestions || [];
+  const summary = toArray(parsed.Summary);
+  const answer = toArray(parsed.Answer ?? parsed.answer);
+  const followUps = toArray(parsed.Followups ?? parsed.followUpQuestions);
 
   return (
     <div className="space-y-5">
@@ -73,10 +79,7 @@ export function FormattedResponse({
           </p>
           <div className="space-y-3">
             {answer.map((point, i) => (
-              <div
-                key={i}
-                className="pl-4 border-l-2 border-accent/30 py-0.5"
-              >
+              <div key={i} className="pl-4 border-l-2 border-accent/30 py-0.5">
                 <p className="text-sm leading-relaxed text-text-primary/90">
                   {point}
                 </p>
