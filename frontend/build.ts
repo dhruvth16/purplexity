@@ -128,6 +128,19 @@ console.log(
   `📄 Found ${entrypoints.length} HTML ${entrypoints.length === 1 ? "file" : "files"} to process\n`,
 );
 
+const required = [
+  "BUN_PUBLIC_BACKEND_URL",
+  "BUN_PUBLIC_SUPABASE_URL",
+  "BUN_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+];
+
+for (const key of required) {
+  if (!process.env[key]) {
+    console.error(`❌ Missing required env var: ${key}`);
+    process.exit(1);
+  }
+}
+
 const result = await Bun.build({
   entrypoints,
   outdir,
@@ -136,10 +149,9 @@ const result = await Bun.build({
   target: "browser",
   sourcemap: "linked",
   define: {
-    "process.env.BUN_PUBLIC_SUPABASE_URL": JSON.stringify(
-      process.env.BUN_PUBLIC_SUPABASE_URL,
-    ),
-    "process.env.BUN_PUBLIC_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
+    __BACKEND_URL__: JSON.stringify(process.env.BUN_PUBLIC_BACKEND_URL),
+    __SUPABASE_URL__: JSON.stringify(process.env.BUN_PUBLIC_SUPABASE_URL),
+    __SUPABASE_KEY__: JSON.stringify(
       process.env.BUN_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     ),
   },

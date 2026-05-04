@@ -3,9 +3,9 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { supabase } from "../../lib/client";
 import axios from "axios";
-import { BACKEND_URL } from "../../lib/backend.config";
 import Sidebar from "@/components/Sidebar";
 import MainContent from "@/components/MainContent";
+import { ENV } from "@/config/env";
 
 interface Conversation {
   id: string;
@@ -64,12 +64,19 @@ function Dashboard() {
   const fetchConversations = useCallback(async () => {
     if (!jwt) return;
     try {
-      const res = await axios.get(`${BACKEND_URL}/api/conversations`, {
+      const res = await axios.get(`${ENV.BACKEND_URL}/api/conversations`, {
         headers: { Authorization: `Bearer ${jwt}` },
       });
-      setConversations(res.data);
+      const payload = res.data;
+      const list = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.conversations)
+          ? payload.conversations
+          : [];
+      setConversations(list);
     } catch (error) {
       console.error("Error fetching conversations:", error);
+      setConversations([]);
     }
   }, [jwt]);
 
@@ -85,7 +92,7 @@ function Dashboard() {
     setSources([]);
     try {
       const res = await axios.get(
-        `${BACKEND_URL}/api/conversations/${conversationId}`,
+        `${ENV.BACKEND_URL}/api/conversations/${conversationId}`,
         { headers: { Authorization: `Bearer ${jwt}` } },
       );
       setMessages(res.data.messages || []);
@@ -143,8 +150,8 @@ function Dashboard() {
 
     const isFollowUp = activeConversationId !== null;
     const endpoint = isFollowUp
-      ? `${BACKEND_URL}/api/stream/follow_up`
-      : `${BACKEND_URL}/api/stream`;
+      ? `${ENV.BACKEND_URL}/api/stream/follow_up`
+      : `${ENV.BACKEND_URL}/api/stream`;
 
     const body: any = { query: currentQuery };
     if (isFollowUp) body.conversationId = activeConversationId;
